@@ -1,0 +1,8 @@
+kind: ConfigMap 
+apiVersion: v1 
+metadata:
+  name: postgres-config 
+data:
+  database: k8s
+  postgres_host: postgres
+  postgres_user: postgres

@@ -18,13 +18,16 @@ jobs:
         docker build -f ./Dockerfile -t amirelgammal/sample-java .
         echo -n "verifying images:"
         docker images        
-    - name: Deploy to minikube
+    - name: Deploy postgres
       run: |
         kubectl create ns sonar
+        helm upgrade --install postgres -f postgres/values.yaml -n sonar
+    - name: Deploy to sample app
+      run: |
         helm upgrade --install sample-sonar deploy -n sonar
     - name: Test service URLs
       run: |
         minikube service list
         minikube service example --url
         echo "------------------opening the service------------------"
-        curl $(minikube service example --url)        
+        # curl $(minikube service example --url)        
