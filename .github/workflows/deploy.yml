@@ -19,7 +19,7 @@ jobs:
         echo -n "verifying images:"
         docker images        
     - name: Deploy to minikube
-      run:
+      run: |
         kubectl create ns sonar
         helm upgrade --install sample-sonar deploy -n sonar
     - name: Test service URLs
