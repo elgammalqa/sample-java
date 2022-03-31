@@ -1,20 +1,22 @@
 name: CI
 on:
-  - pull_request
+  - push
 jobs:
   job1:
     runs-on: ubuntu-latest
     name: build sample java and deploy to minikube
     steps:
-    - uses: actions/checkout@v2
-    - name: Start minikube
-      uses: medyagh/setup-minikube@master
-    - name: Try the cluster !
-      run: kubectl get pods -A
+    - name: Build and push CONTAINER_NAME
+      uses: ianbelcher/eks-kubectl-action@master
+      with:
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws_region: ${{ secrets.AWS_REGION }}
+        cluster_name: ${{ secrets.CLUSTER_NAME }}
+        eks_role_arn: ${{ secrets.EKS_ROLE_ARN }}
     - name: Build image
       run: |
         export SHELL=/bin/bash
-        eval $(minikube -p minikube docker-env)
         docker build -f ./Dockerfile -t amirelgammal/sample-java .
         echo -n "verifying images:"
         docker images        
@@ -30,4 +32,4 @@ jobs:
         minikube service list
         minikube service example --url
         echo "------------------opening the service------------------"
-        # curl $(minikube service example --url)        
+        # curl $(minikube service example --url)      
