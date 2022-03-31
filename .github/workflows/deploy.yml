@@ -1,35 +1,75 @@
-name: CI
-on:
-  - push
+on: push
+name: deploy
 jobs:
-  job1:
+  deploy:
+    name: deploy to cluster
     runs-on: ubuntu-latest
-    name: build sample java and deploy to minikube
     steps:
-    - name: Build and push CONTAINER_NAME
-      uses: ianbelcher/eks-kubectl-action@master
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
       with:
-        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws_region: ${{ secrets.AWS_REGION }}
-        cluster_name: ${{ secrets.CLUSTER_NAME }}
-        eks_role_arn: ${{ secrets.EKS_ROLE_ARN }}
-    - name: Build image
-      run: |
-        export SHELL=/bin/bash
-        docker build -f ./Dockerfile -t amirelgammal/sample-java .
-        echo -n "verifying images:"
-        docker images        
-    - name: Deploy postgres
-      run: |
-        kubectl create ns sonar
-        helm upgrade --install postgresql postgresql -f postgresql/values.yaml -n sonar
-    - name: Deploy to sample app
-      run: |
-        helm upgrade --install sample-sonar deploy -n sonar
-    - name: Test service URLs
-      run: |
-        minikube service list
-        minikube service example --url
-        echo "------------------opening the service------------------"
-        # curl $(minikube service example --url)      
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ AWS_REGION }}
+    
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: deploy to cluster
+      uses: kodermax/kubectl-aws-eks@master
+      env:
+        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA_STAGING }}
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: my-app
+        IMAGE_TAG: ${{ github.sha }}
+      with:
+        args: set image deployment/$ECR_REPOSITORY $ECR_REPOSITORY=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        
+    - name: verify deployment
+      uses: kodermax/kubectl-aws-eks@master
+      env:
+        KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}
+      with:
+        args: rollout status deployment/my-app
+
+
+
+# name: CI
+# on:
+#   - push
+# jobs:
+#   job1:
+#     runs-on: ubuntu-latest
+#     name: build sample java and deploy to minikube
+#     steps:
+#     - name: Build and push CONTAINER_NAME
+#       uses: ianbelcher/eks-kubectl-action@master
+#       with:
+#         aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#         aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#         aws_region: ${{ secrets.AWS_REGION }}
+#         cluster_name: ${{ secrets.CLUSTER_NAME }}
+#         eks_role_arn: ${{ secrets.EKS_ROLE_ARN }}
+#     - name: Build image
+#       run: |
+#         export SHELL=/bin/bash
+#         docker build -f ./Dockerfile -t amirelgammal/sample-java .
+#         echo -n "verifying images:"
+#         docker images        
+#     - name: Deploy postgres
+#       run: |
+#         kubectl create ns sonar
+#         helm upgrade --install postgresql postgresql -f postgresql/values.yaml -n sonar
+#     - name: Deploy to sample app
+#       run: |
+#         helm upgrade --install sample-sonar deploy -n sonar
+#     - name: Test service URLs
+#       run: |
+#         minikube service list
+#         minikube service example --url
+#         echo "------------------opening the service------------------"
+#         # curl $(minikube service example --url)      
