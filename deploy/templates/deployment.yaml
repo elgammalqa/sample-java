@@ -46,7 +46,7 @@ spec:
               path: /
               port: http
                   env:
-          - name: POSTGRES_USER
+          - name: POSTGRES_USERNAME
             valueFrom:
               configMapKeyRef:
                 name: postgres-config
