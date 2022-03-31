@@ -21,7 +21,7 @@ jobs:
     - name: Deploy postgres
       run: |
         kubectl create ns sonar
-        helm upgrade --install postgres postgres -f postgres/values.yaml -n sonar
+        helm upgrade --install postgresql postgresql -f postgres/values.yaml -n sonar
     - name: Deploy to sample app
       run: |
         helm upgrade --install sample-sonar deploy -n sonar
